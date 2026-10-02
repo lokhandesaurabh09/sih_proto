@@ -37,3 +37,24 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #1e293b #0b0f19;
 }
+
+/* Slim in-panel scrollbars — telemetry feed, rules table, code blocks */
+.scroll-soc::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-soc::-webkit-scrollbar-track {
+  background: #334155; /* slate-700 */
+  border-radius: 999px;
+}
+.scroll-soc::-webkit-scrollbar-thumb {
+  background: #64748b; /* slate-500 */
+  border-radius: 999px;
+}
+.scroll-soc::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.scroll-soc {
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #334155;
+}

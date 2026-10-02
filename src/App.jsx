@@ -113,7 +113,7 @@ function Panel({ title, icon: Icon, accent = "text-cyan-400", right, children })
       <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-900/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${accent}`} />
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">{title}</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-300">{title}</h2>
         </div>
         {right}
       </div>
@@ -132,8 +132,8 @@ function Kpi({ label, value, tone = "cyan", sub }) {
     emerald: "text-emerald-400",
   };
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/70 px-3.5 py-2.5">
-      <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-slate-600">{label}</div>
+    <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</div>
       <div className={`mt-1.5 truncate font-mono text-base font-bold leading-none ${tones[tone]}`}>{value}</div>
       {sub && <div className="mt-1 font-mono text-[10px] text-slate-500">{sub}</div>}
     </div>
@@ -231,7 +231,7 @@ const STATUS_STYLES = {
     pill: "border-rose-500/70 bg-rose-500/25 text-rose-300",
     label: "FW·DROP",
     bar: "bg-rose-500 shadow-[0_0_8px_rgba(255,61,0,0.7)] animate-pulse",
-    dot: "bg-rose-500",
+    dot: "bg-rose-500 animate-pulse",
   },
   system: {
     row: "bg-emerald-500/[0.08] text-emerald-100/90",
@@ -291,7 +291,7 @@ export default function App() {
   const baseTimeline = useMemo(() => SCENARIO_TIMELINE.slice(0, tlIndex + 1), [tlIndex]);
   const latest = baseTimeline[baseTimeline.length - 1];
   const alertActive = baseTimeline.some((d) => d.world_model >= THRESHOLD);
-  const riskPct = Math.round(latest.world_model * 100);
+  const riskPct = latest.world_model * 100;
 
   /* timeline branches purely on mitigationState (App-side mirror of FirewallMitigator):
      — armed   : append forecast as `projected` (emerald "P after mitigation" line)
@@ -492,10 +492,10 @@ export default function App() {
             }
           >
             {/* KPI strip */}
-            <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <Kpi
                 label="Predicted Risk"
-                value={`${riskPct}%`}
+                value={`${riskPct.toFixed(1)}%`}
                 tone={riskTone}
                 sub={`P(infiltrate) = ${latest.world_model.toFixed(2)}`}
               />
@@ -507,7 +507,7 @@ export default function App() {
             {/* risk meter */}
             <div className="mb-4">
               <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-slate-500">
-                <span>RISK ENVELOPE</span>
+                <span className="font-bold uppercase tracking-widest text-slate-400">RISK ENVELOPE</span>
                 <span className={latest.world_model >= THRESHOLD ? "font-bold text-rose-400" : "text-cyan-400/80"}>
                   {latest.world_model >= THRESHOLD ? "⚠ OVER THRESHOLD" : "WITHIN THRESHOLD"}
                 </span>
@@ -524,7 +524,7 @@ export default function App() {
                   transition={{ duration: 0.9, ease: "easeOut" }}
                 />
               </div>
-              <div className="mt-0.5 flex justify-between font-mono text-[9px] text-slate-600">
+              <div className="mt-0.5 flex justify-between font-mono text-[10px] text-slate-500">
                 <span>0.00</span>
                 <span className="text-rose-500/80">0.75 ⚠</span>
                 <span>1.00</span>
@@ -650,8 +650,8 @@ export default function App() {
           <Panel title="Current MITRE ATT&CK Stage" icon={Crosshair} accent="text-purple-400">
             <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2">
               <div>
-                <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-purple-300/70">Predicted Stage</div>
-                <div className="text-sm font-bold text-purple-300">{ALERT_PAYLOAD.stage}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Predicted Stage</div>
+                <div className="font-mono text-sm font-bold text-purple-300">{ALERT_PAYLOAD.stage}</div>
               </div>
               <Target className="h-5 w-5 animate-pulse text-purple-400" />
             </div>
@@ -744,14 +744,21 @@ export default function App() {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   LNK-ACTIVE
                 </span>
-                <span className="hidden sm:inline">{String(feedRows.length).padStart(4, "0")} PKTS</span>
+                <span className="hidden sm:inline">{feedRows.length === 0 ? "····" : String(feedRows.length).padStart(4, "0")} PKTS</span>
                 <span className="hidden text-slate-600 md:inline">|</span>
                 <span className="hidden text-slate-500 md:inline">10G-FABRIC · ETH0</span>
               </div>
             }
           >
-            <div className="-m-4 max-h-[300px] overflow-auto">
-              <table className="w-full min-w-[820px] border-collapse font-mono text-[12px]">
+            {feedRows.length === 0 && (
+              <div className="flex h-32 items-center justify-center gap-2 font-mono text-[11px] text-slate-700">
+                <Radio className="h-4 w-4 opacity-60" />
+                AWAITING INBOUND TELEMETRY…
+              </div>
+            )}
+            {feedRows.length > 0 && (
+              <div className="-m-4 max-h-[300px] scroll-soc overflow-auto">
+                <table className="w-full min-w-[820px] border-collapse font-mono text-[11px]">
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-slate-800 bg-slate-900 text-left text-[9px] uppercase tracking-[0.2em] text-slate-500">
                     <th className="w-1.5 px-1"><span className="sr-only">flag</span></th>
@@ -775,12 +782,13 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+            )}
           </Panel>
         </section>
       </main>
       {/* ═══════════ FOOTER ═══════════ */}
-      <footer className="relative z-10 border-t border-slate-800/70 px-5 py-3">
-        <div className="mx-auto flex max-w-[1700px] flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-slate-600">
+      <footer className="relative z-10 w-full overflow-hidden border-t border-slate-800/70 px-5 py-3">
+        <div className="mx-auto flex max-w-[1700px] flex-nowrap items-center justify-between gap-6 whitespace-nowrap font-mono text-xs text-slate-600">
           <span className="inline-flex items-center gap-1.5">
             <Cpu className="h-3 w-3 text-purple-400/70" />
             WORLD-MODEL INFERENCE ENGINE — LOCAL · DETERMINISTIC · NO CLOUD ROUND-TRIP
@@ -815,7 +823,7 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-rose-500/30 bg-rose-500/10 px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <Siren className="h-4 w-4 animate-pulse text-rose-500" />
-                <span className="text-[11px] font-bold tracking-[0.2em] text-rose-400">ACTIVE ALERT</span>
+                <span className="text-xs font-bold tracking-widest text-rose-400">ACTIVE ALERT</span>
               </div>
               <span className="inline-flex items-center gap-1.5 rounded border border-rose-500/60 bg-rose-500/20 px-2 py-0.5 font-mono text-[10px] font-bold text-rose-300">
                 <Skull className="h-3 w-3" /> {ALERT_PAYLOAD.severity}
@@ -825,17 +833,17 @@ export default function App() {
             {/* alert body */}
             <div className="space-y-3 px-4 py-4">
               <div>
-                <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-slate-500">Predicted Attack</div>
-                <div className="text-sm font-bold text-slate-50">High-Velocity SSH Brute Force</div>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Predicted Attack</div>
+                <div className="font-mono text-sm font-bold text-slate-50">High-Velocity SSH Brute Force</div>
               </div>
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px]">
                 <div className="rounded-md border border-slate-800 bg-slate-900/80 px-2.5 py-2">
-                  <div className="text-slate-500">ATT&CK STAGE</div>
-                  <div className="mt-0.5 font-bold text-purple-300">{ALERT_PAYLOAD.stage}</div>
+                  <div className="text-slate-400">ATT&CK STAGE</div>
+                  <div className="mt-0.5 font-mono font-bold text-purple-300">{ALERT_PAYLOAD.stage}</div>
                 </div>
                 <div className="rounded-md border border-slate-800 bg-slate-900/80 px-2.5 py-2">
-                  <div className="text-slate-500">TARGET NODE</div>
-                  <div className="mt-0.5 font-bold text-rose-400">{ALERT_PAYLOAD.target}</div>
+                  <div className="text-slate-400">TARGET NODE</div>
+                  <div className="mt-0.5 font-mono font-bold text-rose-400">{ALERT_PAYLOAD.target}</div>
                 </div>
               </div>
               <p className="rounded-md border-l-2 border-rose-500 bg-slate-900/60 px-3 py-2 text-[11px] leading-relaxed text-slate-300">

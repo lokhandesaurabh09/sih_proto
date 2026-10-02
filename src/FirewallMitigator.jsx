@@ -51,7 +51,7 @@ const SOURCE_TONES = {
   BASELINE: "border-slate-600 bg-slate-800/60 text-slate-400",
 };
 
-const stamp = () => new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+const stamp = () => new Date().toISOString().replaceAll("-", "").replaceAll(":", "").replaceAll("T", "").slice(0, 14);
 
 /* ═══════════════════════════════════════════════  subcomponents  ══ */
 
@@ -61,8 +61,10 @@ function ToggleSwitch({ rule, on, onToggle }) {
       onClick={() => onToggle(rule)}
       aria-label={`toggle ${rule.id}`}
       title={on ? `${rule.id} ENABLED` : `${rule.id} DISABLED`}
-      className={`relative inline-flex h-4 w-8 items-center rounded-full border transition-colors ${
-        on ? "border-emerald-400/50 bg-emerald-500/30" : "border-slate-700 bg-slate-800"
+      className={`relative inline-flex h-4 w-8 cursor-pointer items-center rounded-full border transition-all active:scale-90 ${
+        on
+          ? "border-emerald-400/50 bg-emerald-500/30 hover:border-emerald-300/80 hover:bg-emerald-500/40"
+          : "border-slate-700 bg-slate-800 hover:border-slate-500 hover:bg-slate-700"
       }`}
     >
       <span
@@ -85,7 +87,7 @@ function RuleRow({ rule, hitCount, state, onToggle }) {
       initial={{ opacity: 0, y: -14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: "easeOut" }}
-      className={`border-b border-slate-800/60 transition-colors hover:bg-slate-800/30 ${!rule.enabled ? "opacity-45" : ""}`}
+      className={`border-b border-slate-800/60 transition-colors hover:bg-slate-800/50 ${!rule.enabled ? "opacity-45" : ""}`}
     >
       <td className="whitespace-nowrap px-3 py-2 font-bold text-slate-300">
         <span className="flex items-center gap-2">
@@ -107,7 +109,7 @@ function RuleRow({ rule, hitCount, state, onToggle }) {
         <span className="text-slate-600">:{rule.port}</span>
       </td>
       <td className="px-3 py-2 text-center text-slate-400 uppercase">{rule.proto}</td>
-      <td className="px-3 py-2 text-right font-bold text-slate-200">{hitCount}</td>
+      <td className="px-3 py-2 text-right font-bold tabular-nums text-slate-200">{String(hitCount).padStart(3, "0")}</td>
       <td className="px-3 py-2">
         <span className={`inline-flex rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${st}`}>
           {rule.source}
@@ -163,27 +165,27 @@ function DraftActions({ rule, onApprove, onDismiss }) {
 function BuilderField({ label, value, onChange, placeholder, error }) {
   return (
     <div>
-      <label className="mb-1 block text-[9px] uppercase tracking-[0.2em] text-slate-600">{label}</label>
+      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         spellCheck={false}
-        className={`w-full rounded-md border bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-400/50 ${
-          error ? "border-rose-500/70" : "border-slate-700"
+        className={`w-full rounded-md border bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-400/50 ${
+          error ? "border-rose-500/70 hover:border-rose-400" : "border-slate-700 hover:border-slate-600"
         }`}
       />
-      {error && <p className="mt-0.5 font-mono text-[8.5px] font-bold text-rose-400">⚠ {error}</p>}
+      {error && <p className="mt-0.5 font-mono text-[10px] font-bold text-rose-400">⚠ {error}</p>}
     </div>
   );
 }
 
 function MiniStat({ label, value, tone, sub }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2">
-      <div className="text-[8.5px] font-semibold uppercase tracking-[0.18em] text-slate-600">{label}</div>
-      <div className={`mt-0.5 font-mono text-sm font-bold ${tone}`}>{value}</div>
-      {sub && <div className="font-mono text-[9px] text-slate-600">{sub}</div>}
+    <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</div>
+      <div className={`mt-1 font-mono text-sm font-bold tabular-nums ${tone}`}>{value}</div>
+      {sub && <div className="mt-0.5 font-mono text-[10px] text-slate-500">{sub}</div>}
     </div>
   );
 }
@@ -201,7 +203,7 @@ export default function FirewallMitigator({
   /* ── state ── */
   const [fwRules, setFwRules] = useState(SEED_RULES);
   const [mitState, setMitState] = useState("standby"); // standby | drafted | armed | revoked
-  const [builder, setBuilder] = useState({ src: "", dst: "10.0.5.23", port: "", proto: "tcp", action: "DROP" });
+  const [builder, setBuilder] = useState({ src: "45.83.12.7", dst: "10.0.5.23", port: "22", proto: "tcp", action: "DROP" });
   const [deployError, setDeployError] = useState(null);
   const [exported, setExported] = useState(false);
   const autoFiredRef = useRef(false); // StrictMode-safe single-draft guard
@@ -309,7 +311,7 @@ export default function FirewallMitigator({
     setFwRules((prev) => [rule, ...prev]);
     onRuleEvent(`SOC :: ACL-ADD ${id} ${rule.action} ${rule.src} → ${rule.dst}:${rule.port} ${rule.proto}`);
     setDeployError(null);
-    setBuilder((b) => ({ ...b, src: "", port: "" }));
+    setBuilder((b) => ({ ...b, src: "45.83.12.7", port: "22" }));
   };
 
   /* ── policy export (Blob download) ── */
@@ -368,10 +370,10 @@ export default function FirewallMitigator({
   const armedRules = fwRules.filter((r) => r.enabled).length;
 
   const CHIP = {
-    standby: { label: "· STANDBY", cls: "border-slate-700 bg-slate-800/80 text-slate-400" },
-    drafted: { label: "⟳ DRAFT PENDING", cls: "animate-pulse border-amber-400/50 bg-amber-500/15 text-amber-300" },
-    armed: { label: "● ARMED", cls: "animate-glow-pulse border-emerald-400/50 bg-emerald-500/15 text-emerald-300" },
-    revoked: { label: "● MITIGATION REVOKED", cls: "animate-pulse border-rose-500/60 bg-rose-500/15 text-rose-300" },
+    standby: { label: "STANDBY", dot: "animate-pulse bg-slate-400", cls: "border-slate-700 bg-slate-800/80 text-slate-400" },
+    drafted: { label: "DRAFT PENDING", dot: "animate-pulse bg-amber-400", cls: "border-amber-400/50 bg-amber-500/15 text-amber-300" },
+    armed: { label: "ARMED", dot: "animate-pulse bg-emerald-400", cls: "animate-glow-pulse border-emerald-400/50 bg-emerald-500/15 text-emerald-300" },
+    revoked: { label: "MITIGATION REVOKED", dot: "animate-pulse bg-rose-500", cls: "border-rose-500/60 bg-rose-500/15 text-rose-300" },
   }[mitState];
 
   const statusLines = {
@@ -384,23 +386,26 @@ export default function FirewallMitigator({
   return (
     <div className="relative flex flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/70 shadow-[0_0_40px_rgba(0,0,0,0.25)] backdrop-blur-sm">
       {/* ── header ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 bg-slate-900/60 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-900/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <Ban className="h-4 w-4 text-rose-400" />
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-200">Dynamic Firewall Mitigation</h2>
-          <span className="hidden font-mono text-[9px] text-slate-600 sm:inline">PREDICTION-AWARE ACL ENGINE</span>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-300">Dynamic Firewall Mitigation</h2>
         </div>
-        <span className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider ${CHIP.cls}`}>
-          {CHIP.label}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="hidden font-mono text-[10px] text-slate-500 md:inline">PREDICTION-AWARE ACL ENGINE</span>
+          <span className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider ${CHIP.cls}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${CHIP.dot}`} />
+            {CHIP.label}
+          </span>
+        </div>
       </div>
 
       {/* ── body grid ── */}
       <div className="grid flex-1 grid-cols-1 gap-4 p-4 xl:grid-cols-3">
         {/* left — rules table + quick stats */}
-        <div className="flex flex-col gap-3 xl:col-span-2">
+        <div className="flex flex-col gap-4 xl:col-span-2">
           <div className="overflow-hidden rounded-lg border border-slate-800">
-            <div className="max-h-[280px] overflow-auto">
+            <div className="scroll-soc max-h-[280px] overflow-auto">
               <table className="w-full min-w-[760px] border-collapse font-mono text-[11px]">
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-slate-800 bg-slate-900 text-left text-[9px] uppercase tracking-[0.2em] text-slate-500">
@@ -433,10 +438,20 @@ export default function FirewallMitigator({
           </div>
 
           {/* quick stats */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <MiniStat label="Blocked pkts" value={String(totalBlocked).padStart(3, "0")} tone="text-emerald-300" sub="live · sum of per-rule bars" />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <MiniStat
+              label="Blocked pkts"
+              value={totalBlocked === 0 ? "···" : String(totalBlocked).padStart(3, "0")}
+              tone={totalBlocked === 0 ? "text-slate-700" : "text-emerald-300"}
+              sub="live · sum of per-rule bars"
+            />
             <MiniStat label="Armed rules" value={`${armedRules}/${fwRules.length}`} tone="text-cyan-300" sub="enabled / total" />
-            <MiniStat label="Curr risk" value={`${Math.round((attack.worldP || 0) * 100)}%`} tone="text-rose-400" sub="world-model P" />
+            <MiniStat
+              label="Curr risk"
+              value={`${((attack.worldP || 0) * 100).toFixed(1)}%`}
+              tone="text-rose-400"
+              sub="world-model P"
+            />
             <MiniStat
               label="Forecast"
               value={mitState === "armed" ? "0.88→0.21" : mitState === "revoked" ? "0.88→0.95↑" : "—"}
@@ -447,14 +462,14 @@ export default function FirewallMitigator({
         </div>
 
         {/* right rail */}
-        <div className="flex flex-col gap-3 xl:col-span-1">
+        <div className="flex flex-col gap-4 xl:col-span-1">
           {/* drop activity sparkline */}
-          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Drop Activity by Rule</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Drop Activity by Rule</span>
               <Server className="h-3 w-3 text-rose-400/70" />
             </div>
-            <div className="h-[88px] w-full">
+            <div className="relative h-[88px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hitsData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                   <XAxis
@@ -472,18 +487,24 @@ export default function FirewallMitigator({
                     <LabelList
                       dataKey="hits"
                       position="top"
+                      formatter={(v) => (v > 0 ? String(v).padStart(3, "0") : "")}
                       style={{ fill: "#94a3b8", fontSize: 9, fontWeight: 700, fontFamily: "JetBrains Mono, monospace" }}
                     />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              {totalBlocked === 0 && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] text-slate-700">
+                  NO DROP ACTIVITY · AWAITING DETECTION
+                </div>
+              )}
             </div>
           </div>
 
           {/* mitigation status readout */}
-          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Mitigation Status</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Mitigation Status</span>
               <span
                 className={`inline-flex h-1.5 w-1.5 rounded-full ${
                   mitState === "armed"
@@ -492,7 +513,7 @@ export default function FirewallMitigator({
                     ? "animate-pulse bg-amber-400"
                     : mitState === "revoked"
                     ? "animate-pulse bg-rose-500"
-                    : "bg-slate-500"
+                    : "animate-pulse bg-slate-400"
                 }`}
               />
             </div>
@@ -522,7 +543,7 @@ export default function FirewallMitigator({
       {/* ── ACL rule builder (full width strip) ── */}
       <div className="border-t border-slate-800/80 bg-slate-950/50 px-4 pb-4 pt-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-widest text-slate-300">
             <SlidersHorizontal className="h-3 w-3 text-cyan-400" /> Rules — manual edge ACL builder
           </span>
           {deployError && (
@@ -531,7 +552,7 @@ export default function FirewallMitigator({
             </span>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2 font-mono text-[11px] sm:grid-cols-3 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 font-mono text-[11px] sm:grid-cols-3 lg:grid-cols-5">
           <BuilderField
             label="Source IP"
             value={builder.src}
@@ -554,11 +575,11 @@ export default function FirewallMitigator({
             error={builderErrors.port}
           />
           <div>
-            <label className="mb-1 block text-[9px] uppercase tracking-[0.2em] text-slate-600">Proto</label>
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Proto</label>
             <select
               value={builder.proto}
               onChange={(e) => handleBuilderChange("proto", e.target.value)}
-              className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none focus:border-cyan-400/50"
+              className="w-full cursor-pointer rounded-md border border-slate-700 bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none transition-colors hover:border-slate-600 focus:border-cyan-400/50"
             >
               {["tcp", "udp", "icmp", "any"].map((p) => (
                 <option key={p} value={p} className="bg-slate-900">
@@ -568,11 +589,11 @@ export default function FirewallMitigator({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-[9px] uppercase tracking-[0.2em] text-slate-600">Action</label>
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-slate-400">Action</label>
             <select
               value={builder.action}
               onChange={(e) => handleBuilderChange("action", e.target.value)}
-              className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none focus:border-cyan-400/50"
+              className="w-full cursor-pointer rounded-md border border-slate-700 bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-200 outline-none transition-colors hover:border-slate-600 focus:border-cyan-400/50"
             >
               {["DROP", "ALLOW"].map((a) => (
                 <option key={a} value={a} className="bg-slate-900">
@@ -581,19 +602,28 @@ export default function FirewallMitigator({
               ))}
             </select>
           </div>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <span className="min-w-0 font-mono text-[9px] leading-relaxed text-slate-600">
+            IPv4 / CIDR source · any IP or port accepted · pre-loaded from live threat profile · ACLs enforce only after operator approval
+            {atCap && (
+              <span className="font-bold text-amber-300"> · RULE LIMIT 12 — {fwRules.length} ACTIVE</span>
+            )}
+          </span>
           <button
             onClick={handleDeploy}
             disabled={Boolean(builderErrors.src || builderErrors.dst || builderErrors.port) || atCap}
-            className="inline-flex h-[30px] items-center justify-center gap-1.5 self-end rounded-md bg-cyan-500/90 px-3 font-mono text-[10px] font-bold text-slate-950 transition-all hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-600 active:scale-[0.98]"
+            title={
+              atCap
+                ? "Rule limit reached (12) — disable a rule first"
+                : Boolean(builderErrors.src || builderErrors.dst || builderErrors.port)
+                ? "All fields must be valid before deploying"
+                : "Deploy this ACL rule"
+            }
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-cyan-500/90 px-4 py-2 font-mono text-[10px] font-bold text-slate-950 shadow-[0_0_10px_rgba(0,229,255,0.2)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_16px_rgba(0,229,255,0.35)] disabled:cursor-not-allowed disabled:bg-slate-800/80 disabled:text-slate-600 disabled:shadow-none active:scale-[0.98]"
           >
             <PlugZap className="h-3.5 w-3.5" /> DEPLOY ACL
           </button>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[9px] text-slate-600">
-          <span>
-            IPv4 / CIDR source · any IP or port accepted · deploy disabled until all fields validate
-          </span>
-          {atCap && <span className="font-bold text-amber-300">RULE LIMIT 12 — {fwRules.length} ACTIVE</span>}
         </div>
       </div>
     </div>
